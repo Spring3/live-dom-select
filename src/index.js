@@ -51,7 +51,7 @@ window.LiveSelect = function () {
 
   var getContextMenu = function () {
     var container = document.createElement('ul');
-    container.id = '_l-menu';
+    container.id = menuId;
     config.contextMenuOptions.forEach(function (option) {
       var li = document.createElement('li');
       li.innerText = option;
@@ -63,21 +63,20 @@ window.LiveSelect = function () {
 
   window.oncontextmenu = function (e) {
     e = e || window.event;
-    e.preventDefault();
-    e.target.style.border = 'solid 2px red';
-    nextPossibleTarget = e.target;
-    var existingMenu = document.getElementById(menuId);
-    if (existingMenu !== null) {
-      existingMenu.parentNode.removeChild(existingMenu);
-      // also release click handlers
+    if (e.target && (e.target.id === menuId || e.target.className === menuOptionClass)) {
+      return;
     }
-    var menu = getContextMenu();
-    menu.style.position = 'absolute';
+    e.preventDefault();
+    nextPossibleTarget = e.target;
+    nextPossibleTarget.style.border = 'solid 2px red';
+    var menu = document.getElementById(menuId);
+    if (menu === null) {
+      menu = getContextMenu();
+      document.body.appendChild(menu);
+    }
     menu.style.left = e.clientX + 'px';
     var scrollTop = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
     menu.style.top = scrollTop + e.clientY + 'px';
-    menu.style.zIndex = 9999999999;
-    document.body.appendChild(menu);
   };
 
   return api;
