@@ -62,7 +62,7 @@ window.LiveSelect = function (cb) {
       for (var prop in obj) {
         if ({}.hasOwnProperty.call(obj, prop)) {
           if (typeof obj[prop] === 'object') {
-            const section = document.createElement('strong');
+            var section = document.createElement('strong');
             section.className = menuItemHeaderClass;
             section.innerText = prop + ':';
             pureContainer.appendChild(section);
@@ -94,7 +94,7 @@ window.LiveSelect = function (cb) {
     var nextElement = document.elementFromPoint(x, y);
     if (nextElement && nextElement.id !== menuId && internalClasses.indexOf(nextElement.className) === -1) {
       if (hoverTarget) {
-        hoverTarget.style.border = null;
+        hoverTarget.style.border = '';
       }
       nextElement.style.border = 'solid 2px ' + config.highLightColor;
       hoverTarget = nextElement;
@@ -144,7 +144,7 @@ window.LiveSelect = function (cb) {
     } else {
       e.target.setAttribute(attributeName, true);
     }
-    if (typeof cb === function) {
+    if (typeof cb === 'function') {
       cb(api.getSelectedItems());
     }
   }, false);
