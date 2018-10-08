@@ -4,11 +4,11 @@ var menuItemClass = '_l-menu-item';
 var menuItemKeyClass = '_l-menu-item-key';
 var menuItemValueClass = '_l-menu-item-value';
 var menuItemHeaderClass = '_l-menu-item-header';
+var attributeName = '_l-selected';
 var internalClasses = [menuItemClass, menuItemKeyClass, menuItemValueClass, menuItemHeaderClass];
 
 window.LiveSelect = function (cb) {
   var hoverTarget;
-  var selectedTarget;
   var approvedTargets = [];
   var config = {
     highLightColor: 'cyan',
@@ -19,7 +19,7 @@ window.LiveSelect = function (cb) {
   };
 
   var styles = document.createElement('style');
-  styles.innerText = "#_l-menu{" + containerStyles + "}._l-menu-item{padding-left:5px;padding-right:5px;}._l-menu-item-key{color:purple;}._l-menu-item-value{padding-left:5px;}";
+  styles.innerText = "#_l-menu{" + containerStyles + "}._l-menu-item{padding-left:5px;padding-right:5px;}._l-menu-item-key{color:purple;}._l-menu-item-value{padding-left:5px;}*[_l-selected]{background:rgba(46, 204, 64, 0.4) !important;background-color:rgba(46, 204, 64, 0.4) !important;}";
   document.body.appendChild(styles);
 
   var api = {};
@@ -39,6 +39,10 @@ window.LiveSelect = function (cb) {
 
   api.setMenuOffsetY = function (px) {
     config.menuOffsetY = parseInt(px, 10) || 15;
+  }
+
+  api.getSelectedItems = function () {
+    return document.querySelectorAll('*[_l-selected]');
   }
 
   var createContextMenu = function () {
@@ -123,9 +127,7 @@ window.LiveSelect = function (cb) {
   window.addEventListener(config.mouseEvent, function (e) {
     e = e || window.event;
     if (e.which !== config.mouseButton
-      && e.button !== config.mouseButton
-      && e.target
-      && (e.target.id === menuId || internalClasses.indexOf(e.target.className) !== -1)) {
+      || (e.target && (e.target.id === menuId || internalClasses.indexOf(e.target.className) !== -1))) {
       return;
     }
 
@@ -137,8 +139,14 @@ window.LiveSelect = function (cb) {
     // prevent page redirect on click
     e.target.addEventListener('click', clickHandlerStub, false);
     e.preventDefault();
-    nextPossibleTarget = e.target;
-    nextPossibleTarget.style.border = 'solid 2px red';
+    if (e.target.hasAttribute(attributeName)) {
+      e.target.removeAttribute(attributeName);
+    } else {
+      e.target.setAttribute(attributeName, true);
+    }
+    if (typeof cb === function) {
+      cb(api.getSelectedItems());
+    }
   }, false);
 
   return api;
