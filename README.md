@@ -1,9 +1,10 @@
 ## Live Dom Select
 
 This small library provides the ability to select the items live on page.
-Or using the link to the raw library in the master branch: https://raw.githubusercontent.com/Spring3/live-dom-select/master/dist/live-dom-select.min.js
 
 Tested in modern browsers as well as IE 9.
+
+You can check a very simple demo [here](https://spring3.github.io/live-dom-select/)
 
 ### How to use it
 
