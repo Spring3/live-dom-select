@@ -12,7 +12,10 @@ window.LiveSelect = function (cb) {
   var approvedTargets = [];
   var config = {
     highLightColor: 'cyan',
-    mouseEvent: 'mousedown'
+    mouseEvent: 'mousedown',
+    mouseButton: 1,
+    menuOffsetX: 15,
+    menuOffsetY: 15
   };
 
   var styles = document.createElement('style');
@@ -21,32 +24,22 @@ window.LiveSelect = function (cb) {
 
   var api = {};
 
-  api.setContextMenuOptions = function (mOptions) {
-    config.contextMenuOptions = mOptions;
-  }
-
-  api.getSelectedItems = function () {
-    return approvedTargets;
+  api.setTriggerEvent = function (eventName, buttonNumber) {
+    config.mouseEvent = eventName;
+    config.mouseButton = parseInt(button.buttonNumber, 10);
   }
 
   api.setHighlightColor = function (color) {
     config.highLightColor = (color || '').toLowerCase() || 'cyan';
   }
 
-  document.addEventListener('mousemove', function (e) {
-    e = e || window.event;
-    var x = e.clientX;
-    var y = e.clientY;
+  api.setMenuOffsetX = function (px) {
+    config.menuOffsetX = parseInt(px, 10) || 15;
+  }
 
-    var nextElement = document.elementFromPoint(x, y);
-    if (nextElement && nextElement.id !== menuId && internalClasses.indexOf(nextElement.className) === -1) {
-      if (hoverTarget) {
-        hoverTarget.style.border = null;
-      }
-      nextElement.style.border = 'solid 2px ' + config.highLightColor;
-      hoverTarget = nextElement;
-    }
-  }, false);
+  api.setMenuOffsetY = function (px) {
+    config.menuOffsetY = parseInt(px, 10) || 15;
+  }
 
   var createContextMenu = function () {
     var container = document.createElement('ul');
@@ -89,48 +82,63 @@ window.LiveSelect = function (cb) {
     fillContainer(payload);
   }
 
-  var stopPageLoad = function () {
-    window.stop();
-    // IE
-    document.execCommand('Stop');
-  }
+  document.addEventListener('mousemove', function (e) {
+    e = e || window.event;
+    var x = e.clientX;
+    var y = e.clientY;
 
-  window.clickHandler = function (name) {
-    target[name]();
-  }
+    var nextElement = document.elementFromPoint(x, y);
+    if (nextElement && nextElement.id !== menuId && internalClasses.indexOf(nextElement.className) === -1) {
+      if (hoverTarget) {
+        hoverTarget.style.border = null;
+      }
+      nextElement.style.border = 'solid 2px ' + config.highLightColor;
+      hoverTarget = nextElement;
+      var payload = {
+        id: hoverTarget.id || undefined,
+        class: hoverTarget.className || undefined,
+        name: hoverTarget.name || undefined,
+        tag: hoverTarget.tagName || undefined,
+        text: hoverTarget.innerText || undefined,
+        parent: {
+          id: hoverTarget.parentNode.id || undefined,
+          class: hoverTarget.parentNode.className || undefined,
+          name: hoverTarget.parentNode.name || undefined,
+          tag: hoverTarget.parentNode.tagName || undefined,
+          text: hoverTarget.parentNode.innerText || undefined
+        }
+      };
+      var menu = document.getElementById(menuId)
+      if (menu === null) {
+        menu = createContextMenu();
+        document.body.appendChild(menu);
+      }
+      menu.style.left = config.menuOffsetX + e.clientX + 'px';
+      var scrollTop = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+      menu.style.top = config.menuOffsetY + scrollTop + e.clientY + 'px';
+      displayPayload(payload, menu);
+    }
+  }, false);
 
   window.addEventListener(config.mouseEvent, function (e) {
     e = e || window.event;
-    if (e.target && (e.target.id === menuId || internalClasses.indexOf(e.target.className) !== -1)) {
+    if (e.which !== config.mouseButton
+      && e.button !== config.mouseButton
+      && e.target
+      && (e.target.id === menuId || internalClasses.indexOf(e.target.className) !== -1)) {
       return;
     }
+
+    var clickHandlerStub = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setTimeout(function () { e.target.removeEventListener('click', clickHandlerStub); }, 200);
+    };
+    // prevent page redirect on click
+    e.target.addEventListener('click', clickHandlerStub, false);
     e.preventDefault();
-    stopPageLoad();
     nextPossibleTarget = e.target;
     nextPossibleTarget.style.border = 'solid 2px red';
-    var payload = {
-      id: nextPossibleTarget.id || undefined,
-      class: nextPossibleTarget.className || undefined,
-      name: nextPossibleTarget.name || undefined,
-      tag: nextPossibleTarget.tagName || undefined,
-      text: nextPossibleTarget.innerText || undefined,
-      parent: {
-        id: nextPossibleTarget.parentNode.id || undefined,
-        class: nextPossibleTarget.parentNode.className || undefined,
-        name: nextPossibleTarget.parentNode.name || undefined,
-        tag: nextPossibleTarget.parentNode.tagName || undefined,
-        text: nextPossibleTarget.parentNode.innerText || undefined
-      }
-    };
-    var menu = document.getElementById(menuId)
-    if (menu === null) {
-      menu = createContextMenu();
-      document.body.appendChild(menu);
-    }
-    menu.style.left = e.clientX + 'px';
-    var scrollTop = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
-    menu.style.top = scrollTop + e.clientY + 'px';
-    displayPayload(payload, menu);
   }, false);
 
   return api;
