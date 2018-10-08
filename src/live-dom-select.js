@@ -15,7 +15,8 @@ window.LiveSelect = function (cb) {
     mouseEvent: 'mousedown',
     mouseButton: 1,
     menuOffsetX: 15,
-    menuOffsetY: 15
+    menuOffsetY: 15,
+    showContextMenu: true
   };
 
   var styles = document.createElement('style');
@@ -43,6 +44,10 @@ window.LiveSelect = function (cb) {
 
   api.getSelectedItems = function () {
     return document.querySelectorAll('*[_l-selected]');
+  }
+
+  api.showContextMenu = function (newVal) {
+    config.showContextMenu = !!newVal;
   }
 
   var createContextMenu = function () {
@@ -98,29 +103,31 @@ window.LiveSelect = function (cb) {
       }
       nextElement.style.border = 'solid 2px ' + config.highLightColor;
       hoverTarget = nextElement;
-      var payload = {
-        id: hoverTarget.id || undefined,
-        class: hoverTarget.className || undefined,
-        name: hoverTarget.name || undefined,
-        tag: hoverTarget.tagName || undefined,
-        text: hoverTarget.innerText || undefined,
-        parent: {
-          id: hoverTarget.parentNode.id || undefined,
-          class: hoverTarget.parentNode.className || undefined,
-          name: hoverTarget.parentNode.name || undefined,
-          tag: hoverTarget.parentNode.tagName || undefined,
-          text: hoverTarget.parentNode.innerText || undefined
+      if (config.showContextMenu) {
+        var payload = {
+          id: hoverTarget.id || undefined,
+          class: hoverTarget.className || undefined,
+          name: hoverTarget.name || undefined,
+          tag: hoverTarget.tagName || undefined,
+          text: hoverTarget.innerText || undefined,
+          parent: {
+            id: hoverTarget.parentNode.id || undefined,
+            class: hoverTarget.parentNode.className || undefined,
+            name: hoverTarget.parentNode.name || undefined,
+            tag: hoverTarget.parentNode.tagName || undefined,
+            text: hoverTarget.parentNode.innerText || undefined
+          }
+        };
+        var menu = document.getElementById(menuId)
+        if (menu === null) {
+          menu = createContextMenu();
+          document.body.appendChild(menu);
         }
-      };
-      var menu = document.getElementById(menuId)
-      if (menu === null) {
-        menu = createContextMenu();
-        document.body.appendChild(menu);
+        menu.style.left = config.menuOffsetX + e.clientX + 'px';
+        var scrollTop = window.scrollY || window.scrollTop || document.firstChild.scrollTop;
+        menu.style.top = config.menuOffsetY + scrollTop + e.clientY + 'px';
+        displayPayload(payload, menu);
       }
-      menu.style.left = config.menuOffsetX + e.clientX + 'px';
-      var scrollTop = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
-      menu.style.top = config.menuOffsetY + scrollTop + e.clientY + 'px';
-      displayPayload(payload, menu);
     }
   }, false);
 
