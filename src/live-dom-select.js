@@ -42,8 +42,11 @@ window.LiveSelect = function (cb) {
     config.menuOffsetY = parseInt(px, 10) || 15;
   }
 
-  api.getSelectedItems = function () {
-    return document.querySelectorAll('*[_l-selected]');
+  api.getSelectedItems = function (asArray) {
+    var nodelist = document.querySelectorAll('*[_l-selected]');
+    return asArray === true
+      ? Array.prototype.slice.call(nodelist)
+      : nodelist;
   }
 
   api.showContextMenu = function (newVal) {
