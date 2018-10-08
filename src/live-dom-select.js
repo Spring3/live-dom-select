@@ -1,4 +1,4 @@
-var containerStyles = 'position:absolute;left:859px;top:69px;z-index:2147483647;padding:5px 0px;border-radius:3px;background:white;list-style-type:none;min-width:150px;text-align:left;color:black;border:1px solid dimgray;margin:0px;font-size:14px;';
+var containerStyles = 'position:absolute;overflow-y:scroll;max-height:150px;left:859px;top:69px;z-index:2147483647;padding:5px 0px;border-radius:3px;background:white;list-style-type:none;min-width:150px;text-align:left;color:black;border:1px solid dimgray;margin:0px;font-size:14px;';
 var menuId = '_l-menu';
 var menuItemClass = '_l-menu-item';
 var menuItemKeyClass = '_l-menu-item-key';
@@ -51,6 +51,12 @@ window.LiveSelect = function (cb) {
 
   api.showContextMenu = function (newVal) {
     config.showContextMenu = !!newVal;
+    if (!config.showContextMenu) {
+      var menu = document.getElementById(menuId);
+      if (menu) {
+        menu.parentNode.removeChild(menu);
+      }
+    }
   }
 
   var createContextMenu = function () {
@@ -121,7 +127,7 @@ window.LiveSelect = function (cb) {
             text: hoverTarget.parentNode.innerText || undefined
           }
         };
-        var menu = document.getElementById(menuId)
+        var menu = document.getElementById(menuId);
         if (menu === null) {
           menu = createContextMenu();
           document.body.appendChild(menu);
