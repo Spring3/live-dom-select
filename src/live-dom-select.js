@@ -1,5 +1,5 @@
 (function () {
-  var containerStyles = 'position:absolute;overflow-y:scroll;max-height:150px;left:859px;top:69px;z-index:2147483647;padding:5px 0px;border-radius:3px;background:white;list-style-type:none;min-width:150px;text-align:left;color:black;border:1px solid dimgray;margin:0px;font-size:14px;';
+  var containerStyles = 'position:absolute;overflow-y:scroll;max-height:150px;max-width:350px;left:859px;top:69px;z-index:2147483647;padding:5px 0px;border-radius:3px;background:white;list-style-type:none;min-width:150px;text-align:left;color:black;border:1px solid dimgray;margin:0px;font-size:14px;';
   var menuId = '_l-menu';
   var menuItemClass = '_l-menu-item';
   var menuItemKeyClass = '_l-menu-item-key';
@@ -32,7 +32,7 @@
     }
 
     api.setHighlightColor = function (color) {
-      config.highLightColor = (color || '').toLowerCase() || 'cyan';
+      config.highLightColor = typeof color === 'string' ? color.toLowerCase() : color;
     }
 
     api.setMenuOffsetX = function (px) {
@@ -111,7 +111,9 @@
         if (hoverTarget) {
           hoverTarget.style.border = '';
         }
-        nextElement.style.border = 'solid 2px ' + config.highLightColor;
+        if (typeof config.highLightColor === 'string') {
+          nextElement.style.border = 'solid 2px ' + config.highLightColor;
+        }
         hoverTarget = nextElement;
         if (config.showContextMenu) {
           var payload = {
