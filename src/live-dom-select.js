@@ -9,7 +9,10 @@
   var internalClasses = [menuItemClass, menuItemKeyClass, menuItemValueClass, menuItemHeaderClass];
 
   window.LiveSelect = function (cb) {
-    var hoverTarget;
+    if (!(this instanceof LiveSelect)) {
+      return new LiveSelect(cb);
+    }
+
     var approvedTargets = [];
     var config = {
       highLightColor: 'cyan',
@@ -17,40 +20,48 @@
       mouseButton: 1,
       menuOffsetX: 15,
       menuOffsetY: 15,
-      showContextMenu: true
+      showContextMenu: true,
+      throttling: 200
+    };
+
+    var current = {
+      element: undefined,
+      originalBorder: undefined
     };
 
     var styles = document.createElement('style');
     styles.innerText = "#_l-menu{" + containerStyles + "}._l-menu-item{padding-left:5px;padding-right:5px;}._l-menu-item-key{color:purple;}._l-menu-item-value{padding-left:5px;}*[_l-selected]{background:rgba(46, 204, 64, 0.4) !important;background-color:rgba(46, 204, 64, 0.4) !important;}";
     document.body.appendChild(styles);
 
-    var api = {};
-
-    api.setTriggerEvent = function (eventName, buttonNumber) {
+    this.setTriggerEvent = function (eventName, buttonNumber) {
       config.mouseEvent = eventName;
       config.mouseButton = parseInt(button.buttonNumber, 10);
     }
 
-    api.setHighlightColor = function (color) {
+    this.setHighlightColor = function (color) {
       config.highLightColor = typeof color === 'string' ? color.toLowerCase() : color;
     }
 
-    api.setMenuOffsetX = function (px) {
+    this.setMenuOffsetX = function (px) {
       config.menuOffsetX = parseInt(px, 10) || 15;
     }
 
-    api.setMenuOffsetY = function (px) {
+    this.setMenuOffsetY = function (px) {
       config.menuOffsetY = parseInt(px, 10) || 15;
     }
 
-    api.getSelectedItems = function (asArray) {
+    this.setThrottling = function (timeMs) {
+      config.throttling = parseInt(time.ms, 10) || 200;
+    }
+
+    this.getSelectedItems = function (asArray) {
       var nodelist = document.querySelectorAll('*[_l-selected]');
       return asArray === true
         ? Array.prototype.slice.call(nodelist)
         : nodelist;
     }
 
-    api.showContextMenu = function (newVal) {
+    this.showContextMenu = function (newVal) {
       config.showContextMenu = !!newVal;
       if (!config.showContextMenu) {
         var menu = document.getElementById(menuId);
@@ -59,6 +70,43 @@
         }
       }
     }
+
+    // Returns a function, that, when invoked, will only be triggered at most once
+    // during a given window of time. Normally, the throttled function will run
+    // as much as it can, without ever going more than once per `wait` duration;
+    // but if you'd like to disable the execution on the leading edge, pass
+    // `{leading: false}`. To disable execution on the trailing edge, ditto.
+    function throttle (func, wait, options) {
+      var context, args, result;
+      var timeout = null;
+      var previous = 0;
+      if (!options) options = {};
+      var later = function() {
+        previous = options.leading === false ? 0 : Date.now();
+        timeout = null;
+        result = func.apply(context, args);
+        if (!timeout) context = args = null;
+      };
+      return function() {
+        var now = Date.now();
+        if (!previous && options.leading === false) previous = now;
+        var remaining = wait - (now - previous);
+        context = this;
+        args = arguments;
+        if (remaining <= 0 || remaining > wait) {
+          if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+          }
+          previous = now;
+          result = func.apply(context, args);
+          if (!timeout) context = args = null;
+        } else if (!timeout && options.trailing !== false) {
+          timeout = setTimeout(later, remaining);
+        }
+        return result;
+      };
+    };
 
     var createContextMenu = function () {
       var container = document.createElement('ul');
@@ -101,47 +149,47 @@
       fillContainer(payload);
     }
 
-    document.addEventListener('mousemove', function (e) {
+    document.addEventListener('mousemove', throttle(function (e) {
       e = e || window.event;
       var x = e.clientX;
       var y = e.clientY;
 
       var nextElement = document.elementFromPoint(x, y);
+
       if (nextElement && nextElement.id !== menuId && internalClasses.indexOf(nextElement.className) === -1) {
-        if (hoverTarget) {
-          hoverTarget.style.border = '';
-        }
-        if (typeof config.highLightColor === 'string') {
+        if (!nextElement.isEqualNode(current.element)) {
+          // restore the border
+          if (current.element) {
+            current.element.style.border = current.originalBorder;
+          }
+          current.element = nextElement;
+          if (typeof config.highLightColor === 'string') {
+            current.originalBorder = nextElement.style.border;
+            nextElement.style.border = 'solid 2px ' + config.highLightColor;
+          }
+        } else if (current.element) {
           nextElement.style.border = 'solid 2px ' + config.highLightColor;
         }
-        hoverTarget = nextElement;
-        if (config.showContextMenu) {
-          var payload = {
-            id: hoverTarget.id || undefined,
-            class: hoverTarget.className || undefined,
-            name: hoverTarget.name || undefined,
-            tag: hoverTarget.tagName || undefined,
-            text: hoverTarget.innerText || undefined,
-            parent: {
-              id: hoverTarget.parentNode.id || undefined,
-              class: hoverTarget.parentNode.className || undefined,
-              name: hoverTarget.parentNode.name || undefined,
-              tag: hoverTarget.parentNode.tagName || undefined,
-              text: hoverTarget.parentNode.innerText || undefined
-            }
-          };
-          var menu = document.getElementById(menuId);
-          if (menu === null) {
-            menu = createContextMenu();
-            document.body.appendChild(menu);
-          }
-          menu.style.left = config.menuOffsetX + e.clientX + 'px';
-          var scrollTop = window.scrollY || window.scrollTop || document.firstChild.scrollTop || 0;
-          menu.style.top = config.menuOffsetY + scrollTop + e.clientY + 'px';
-          displayPayload(payload, menu);
-        }
+        // if (config.showContextMenu) {
+        //   var payload = {
+        //     id: hoverTarget.id || undefined,
+        //     class: hoverTarget.className || undefined,
+        //     name: hoverTarget.name || undefined,
+        //     tag: hoverTarget.tagName || undefined,
+        //     text: hoverTarget.innerText || undefined
+        //   };
+        //   var menu = document.getElementById(menuId);
+        //   if (menu === null) {
+        //     menu = createContextMenu();
+        //     document.body.appendChild(menu);
+        //   }
+        //   menu.style.left = config.menuOffsetX + e.clientX + 'px';
+        //   var scrollTop = window.scrollY || window.scrollTop || document.firstChild.scrollTop || 0;
+        //   menu.style.top = config.menuOffsetY + scrollTop + e.clientY + 'px';
+        //   displayPayload(payload, menu);
+        // }
       }
-    }, false);
+    }, config.throttling), false);
 
     window.addEventListener(config.mouseEvent, function (e) {
       e = e || window.event;
@@ -167,7 +215,5 @@
         cb(api.getSelectedItems());
       }
     }, false);
-
-    return api;
   }
 })();
