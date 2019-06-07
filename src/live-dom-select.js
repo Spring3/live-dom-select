@@ -18,8 +18,6 @@
       highLightColor: 'cyan',
       mouseEvent: 'mousedown',
       mouseButton: 1,
-      menuOffsetX: 15,
-      menuOffsetY: 15,
       showContextMenu: true,
       throttling: 200
     };
@@ -35,23 +33,15 @@
 
     this.setTriggerEvent = function (eventName, buttonNumber) {
       config.mouseEvent = eventName;
-      config.mouseButton = parseInt(button.buttonNumber, 10);
+      config.mouseButton = parseInt(button.buttonNumber, 10) || config.mouseButton;
     }
 
     this.setHighlightColor = function (color) {
       config.highLightColor = typeof color === 'string' ? color.toLowerCase() : color;
     }
 
-    this.setMenuOffsetX = function (px) {
-      config.menuOffsetX = parseInt(px, 10) || 15;
-    }
-
-    this.setMenuOffsetY = function (px) {
-      config.menuOffsetY = parseInt(px, 10) || 15;
-    }
-
     this.setThrottling = function (timeMs) {
-      config.throttling = parseInt(time.ms, 10) || 200;
+      config.throttling = parseInt(time.ms, 10) || config.throttling;
     }
 
     this.getSelectedItems = function (asArray) {
@@ -170,24 +160,6 @@
         } else if (current.element) {
           nextElement.style.border = 'solid 2px ' + config.highLightColor;
         }
-        // if (config.showContextMenu) {
-        //   var payload = {
-        //     id: hoverTarget.id || undefined,
-        //     class: hoverTarget.className || undefined,
-        //     name: hoverTarget.name || undefined,
-        //     tag: hoverTarget.tagName || undefined,
-        //     text: hoverTarget.innerText || undefined
-        //   };
-        //   var menu = document.getElementById(menuId);
-        //   if (menu === null) {
-        //     menu = createContextMenu();
-        //     document.body.appendChild(menu);
-        //   }
-        //   menu.style.left = config.menuOffsetX + e.clientX + 'px';
-        //   var scrollTop = window.scrollY || window.scrollTop || document.firstChild.scrollTop || 0;
-        //   menu.style.top = config.menuOffsetY + scrollTop + e.clientY + 'px';
-        //   displayPayload(payload, menu);
-        // }
       }
     }, config.throttling), false);
 
@@ -210,6 +182,30 @@
         e.target.removeAttribute(attributeName);
       } else {
         e.target.setAttribute(attributeName, true);
+        if (config.showContextMenu) {
+          var payload = {
+            id: e.target.id || undefined,
+            class: e.target.className || undefined,
+            name: e.target.name || undefined,
+            tag: e.target.tagName || undefined,
+            text: e.target.innerText || undefined
+          };
+          var menu = createContextMenu();
+          document.body.appendChild(menu);
+          if (window.innerWidth - menu.style.width < e.clientX) {
+            menu.style.left = 15 + e.clientX + 'px';
+          } else {
+            menu.style.left = 15 + e.clientX - menu.style.width + 'px';
+          }
+
+          var scrollTop = window.scrollY || window.scrollTop || document.firstChild.scrollTop || 0;
+          if (window.innerHeight - menu.style.height < e.clientY) {
+            menu.style.top = 15 + scrollTop + e.clientY + 'px';
+          } else {
+            menu.style.top = 15 + scrollTop + e.clientY - menu.style.height + 'px';
+          }
+          displayPayload(payload, menu);
+        }
       }
       if (typeof cb === 'function') {
         cb(api.getSelectedItems());
